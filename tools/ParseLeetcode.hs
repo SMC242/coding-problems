@@ -2,7 +2,7 @@
 
 -- Parsing https://leetcode.com inputs
 -- See: https://markkarpov.com/tutorial/megaparsec.html
-module ParseLeetcode (parseLC, variable, variableList) where
+module ParseLeetcode (parseLC, variable, variableList, Value (..)) where
 
 import Control.Applicative hiding (many)
 import Data.Functor
@@ -96,5 +96,9 @@ variable = do
 variableList :: Parser [Variable]
 variableList = commaSeparated variable
 
+toMap :: [Variable] -> M.Map String Value
+toMap = M.fromList . map ((,) <$> variableName <*> variableValue)
+
 -- Form: x = Value[, y = Value[, z = Value]]
-parseLC = undefined
+parseLC :: String -> Either (ParseErrorBundle String Void) (M.Map String Value)
+parseLC s = parse variableList "leetcode problem" s >>= Right . toMap
