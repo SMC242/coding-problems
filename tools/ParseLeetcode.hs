@@ -4,12 +4,11 @@
 -- See: https://markkarpov.com/tutorial/megaparsec.html
 module ParseLeetcode (parseLC, variable, variableList) where
 
-import Control.Applicative
+import Control.Applicative hiding (many)
 import Data.Functor
 import Data.Maybe (fromMaybe, maybe)
 import Data.Void (Void)
-import Text.Megaparsec (MonadParsec (try), Parsec, between, sepBy)
-import Text.Megaparsec qualified as M
+import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
 
@@ -33,14 +32,10 @@ vBoolean =
 
 -- Note: supports unquoted and double-quoted strings. Does not support single-quoted strings
 vString :: Parser Value
-vString = VString <$> (quoted <|> str)
+vString = VString <$> (quote *> manyTill L.charLiteral quote)
   where
-    str = many letterChar -- Todo: match "Cat's apple"
-    quoted = do
-      symbol "\""
-      s <- str
-      symbol "\""
-      return s
+    quote :: Parser Char
+    quote = char '\"'
 
 spaceConsumer :: Parser ()
 spaceConsumer = L.space space1 empty empty
