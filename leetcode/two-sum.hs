@@ -1,43 +1,34 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- Solution for https://leetcode.com/problems/two-sum/description/
 
+import Data.Foldable (traverse_)
 import Data.Map (Map)
 import Data.Map qualified as M
-import Data.Maybe (mapMaybe)
-import Data.Text qualified as T
+import Data.Maybe (mapMaybe, maybe)
+import Tools.ParseLeetcode qualified as P
 
-twoSum :: Int -> [Int] -> Maybe (Int, Int)
-twoSum n xs = case M.lookup x m of
-  Just i -> Just (i, idx)
-  Nothing -> Nothing -- Should be impossible because the result was already found
+twoSum :: Integral a => a -> [a] -> Maybe (Int, Int)
+twoSum n xs = M.lookup x m >>= (Just . (,idx))
   where
-    m :: Map Int Int
     m = M.fromList $ zip xs [0 ..] -- Map of (x, index)
     (x, idx) = (!! 0) $ zip xs (mapMaybe (flip M.lookup m . (n -)) xs)
 
-verify :: Int -> [Int] -> (Int, Int) -> Bool
+verify :: Integral a => a -> [a] -> (Int, Int) -> Bool
 verify n xs (i1, i2) = xs !! i1 + xs !! i2 == n
 
-parseVariable :: Read a => T.Text -> Maybe a
-parseVariable s
-  | length xs == 1 = Nothing -- No match
-  | otherwise = Just . read . T.unpack . T.strip . (!! 1) $ xs
-  where
-    xs = T.split (== '=') s
+parseProblem :: P.Parser ([Integer], Integer)
+parseProblem = (,) <$> P.variableOf' (P.listOf P.int) <* P.commaSeparator <*> P.variableOf' P.int
 
 main :: IO ()
 main = do
-  line <- getLine
-  let (left, right) = T.breakOnEnd "," . T.pack $ line
-  if T.length left == 0
-    then error "Invalid format"
-    else do
-      let Just xs = parseVariable . T.dropEnd 1 $ left :: Maybe [Int]
-      let Just target = parseVariable right :: Maybe Int
-      let result = twoSum target xs
-      case result of
-        Just idxs -> do
-          print idxs
-          putStrLn $ "Valid? " ++ show (verify target xs idxs)
-        Nothing -> print "No result"
+  parsed <- getLine >>= P.parseQuestionM parseProblem
+  traverse_
+    ( \(nums, target) -> do
+        let result = twoSum target nums
+        case result of
+          Just idxs -> do
+            print idxs
+            putStrLn $ "Valid? " ++ show (verify target nums idxs)
+          Nothing -> print "No result"
+        return ()
+    )
+    parsed
